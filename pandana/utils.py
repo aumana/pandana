@@ -14,6 +14,16 @@ def bbox_convert(bbox, from_epsg, to_epsg):
     return bbox
 
 
+def gdf_points_to_xy(gdf):
+    gdf = gdf[gdf.type == 'Point']
+    x, y = zip(*[(p.x, p.y) for (i, p)
+               in gdf.geometry.iteritems()])
+    gdf["x"] = x
+    gdf["y"] = y
+    del gdf["geometry"]
+    return pd.DataFrame(gdf)
+
+
 def get_nodes_from_osm(bbox, query, to_epsg=3740):
     gdf = gpd.io.osm.query_osm('node',
                                bbox=bbox,
@@ -25,6 +35,27 @@ def get_nodes_from_osm(bbox, query, to_epsg=3740):
     x = pd.Series(x)
     y = pd.Series(y)
     return x, y
+
+
+def gdf_from_network(net, s, epsg, bbox=None):
+    df = pd.DataFrame({'xcol': net.nodes_df.x.values,
+                       'ycol': net.nodes_df.y.values,
+                       'values': s.values})
+    df['values'] = df['values'].fillna(0)
+
+    if bbox is not None:
+        df = df.query("xcol > %f and ycol > %f and xcol < %f and ycol < "
+                      "%f" % tuple(bbox))
+
+    def make_point(r):
+        return Point(r.xcol, r.ycol)
+
+    df["geometry"] = df.apply(make_point, axis=1)
+    del df["xcol"]
+    del df["ycol"]
+
+    gdf = gpd.GeoDataFrame(df, crs=crs.from_epsg(epsg))
+    return gdf
 
 
 def anything_score(net, config, max_distance, decay, bbox):
