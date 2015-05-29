@@ -115,10 +115,10 @@ setup(
         )
     ],
     install_requires=[
-        'brewer2mpl>=1.4',
         'matplotlib>=1.3.1',
         'numpy>=1.8.0',
         'pandas>=0.13.1',
+        'requests>=2.0',
         'tables>=3.1.0'
     ],
     tests_require=['pytest'],
